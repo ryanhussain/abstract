@@ -1,0 +1,58 @@
+#define IT 256
+#define ITF float(IT)
+#define STR 1.5/sqrt(ITF)
+#define A 1.0
+
+#define SPEED 1
+#define FREQUENCY 6
+#define CLUSTER 3
+#define FEEDBACK 1
+#define SCALE 1.5
+#define MIX 0.5
+
+vector colorFilter(vector c) {
+    vector color;
+    float g = (c.r+c.g+c.b)/3.0;
+    float sx = abs(c.r-g)+abs(c.g-g)+abs(c.b-g);
+    color = c*sx+(1.0-sx)*(c-sx);
+    return color*color;
+}
+
+vector value(vector pos) {
+    vector color;
+    color.x = sin(pos.x);
+    color.y = sin(pos.y);
+    color.z = sin(pos.z);
+    return color;
+}
+
+vector scan(vector pos; vector dir){
+    vector c = vector(MIX); // mix: 0.5
+    for (int i=0; i<IT; i++) {
+        float f = (FEEDBACK - float(i)/ITF)*STR; // feedback: 1
+        
+        vector posMod = value(pos);
+        vector newPos;
+        newPos.x = posMod.y*posMod.z;
+        newPos.y = posMod.x*posMod.z;
+        newPos.z = posMod.x*posMod.y;
+        
+        c+=value(pos+newPos*FREQUENCY)*f; // freq: 4
+        pos+=dir*CLUSTER; // cluster: 2
+    }
+    return colorFilter(c);
+}
+
+
+float a = timestep * SPEED;
+
+vector pos = (cos(a/4.0+sin(a/2.0)),cos(a*0.2),sin(a*0.31)/4.5)*16.0;
+vector on = (1.0,uv.x,uv.y);
+vector n;
+
+n = normalize(pos + (cos(a*2.3),cos(a*2.61),cos(a*1.62)));
+    vector crossRight = normalize( cross(n, {0.0,0.0,1.0}));
+    vector crossUp = normalize(cross(n, crossRight));
+    n *= set(SCALE, crossRight*uv.x, crossUp*uv.y); // scale: 1.5
+
+$outCf = scan(pos,normalize(n)) * {0.1, 0.5, 1};
